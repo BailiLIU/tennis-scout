@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tennis Scout 大网赛战绩助手</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <div class="brand">
+          <div class="brand-mark">TS</div>
+          <div>
+            <strong>Tennis Scout</strong>
+            <span>大网赛战绩助手</span>
+          </div>
+        </div>
+        <nav class="nav-list">
+          <button class="nav-item active" data-view="dashboard">总览</button>
+          <button class="nav-item" data-view="upload">批量导入</button>
+          <button class="nav-item" data-view="events">赛事库</button>
+          <button class="nav-item" data-view="players">选手库</button>
+          <button class="nav-item" data-view="library">库管理</button>
+          <button class="nav-item" data-view="compare">对阵分析</button>
+          <button class="nav-item" data-view="watchlist">关注名单</button>
+        </nav>
+        <div class="data-note">
+          <strong>数据提示</strong>
+          <span>当前为空库，请从 Excel / CSV 批量导入或手动校对开始录入。</span>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">V0 手动录入 + 基础查询版</p>
+            <h1 id="viewTitle">总览</h1>
+          </div>
+          <div class="topbar-actions">
+            <label class="global-search">
+              <span>搜索</span>
+              <input id="globalSearch" type="search" placeholder="选手、学校、赛区、赛事">
+            </label>
+            <button class="ghost-button" id="saveLocal">保存数据</button>
+            <button class="primary-button" id="exportAll">导出 CSV</button>
+          </div>
+        </header>
+
+        <section class="view active" id="dashboardView">
+          <div class="metrics-grid" id="metricsGrid"></div>
+          <div class="two-column">
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">区域战绩</p>
+                  <h2>分区前四学校</h2>
+                </div>
+                <button class="ghost-button" data-view-jump="events">查看赛事库</button>
+              </div>
+              <div class="compact-table-wrap">
+                <table class="compact-table" id="regionalPreview"></table>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">事实型分析</p>
+                  <h2>系统原则</h2>
+                </div>
+              </div>
+              <div class="rules-list">
+                <article>
+                  <strong>只基于已录入事实</strong>
+                  <span>展示历史成绩、直接交手、共同对手和比分接近度，不输出无依据胜率。</span>
+                </article>
+                <article>
+                  <strong>区分赛事层级</strong>
+                  <span>省赛、分区赛、总决赛分组展示，分析时明确数据来源。</span>
+                </article>
+                <article>
+                  <strong>保留人工校对</strong>
+                  <span>Excel / CSV 解析结果先进入校对表，再保存到赛事库和选手库。</span>
+                </article>
+              </div>
+            </section>
+          </div>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                  <p class="eyebrow">全国赛</p>
+                  <h2>全国赛名次资料</h2>
+              </div>
+            </div>
+            <div class="rank-board" id="nationalBoard"></div>
+          </section>
+        </section>
+
+        <section class="view" id="uploadView">
+          <div class="split-workbench">
+            <section class="panel upload-zone">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">批量导入</p>
+                  <h2>选择数据类型</h2>
+                </div>
+              </div>
+              <div class="segmented" role="group" aria-label="数据类型">
+                <button class="segment active" data-shot-type="regional">分区赛</button>
+                <button class="segment" data-shot-type="national">全国赛</button>
+                <button class="segment" data-shot-type="long">长表导入</button>
+                <button class="segment" data-shot-type="teamMatches">团体对阵</button>
+              </div>
+              <div class="type-help" id="typeHelp">对应最终模板页签：分区赛。字段为届次、赛事阶段、赛区、项目、第1名至第4名。</div>
+              <label class="drop-area">
+                <input id="importInput" type="file" accept=".csv,.tsv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                <span>选择 Excel / CSV 文件</span>
+                <small>支持 .csv、.tsv、.xlsx。表头会自动匹配到右侧校对字段。</small>
+              </label>
+              <div class="mock-preview" id="mockPreview" tabindex="0">等待选择 Excel / CSV 文件</div>
+              <label class="paste-table-box">
+                <span>或直接粘贴表格</span>
+                <textarea id="pasteTableInput" placeholder="从 Excel 复制包含表头的数据区域后，粘贴到这里"></textarea>
+              </label>
+              <button class="ghost-button wide" id="parsePastedTable">解析粘贴表格</button>
+              <button class="primary-button wide" id="mockRecognize">解析导入</button>
+            </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">人工校对</p>
+                  <h2>结构化结果</h2>
+                </div>
+                <button class="ghost-button" id="saveCorrection">保存入库</button>
+              </div>
+              <div class="editable-table-wrap">
+                <table class="editable-table" id="correctionTable"></table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="eventsView">
+          <div class="filter-row">
+            <label>年份
+              <select id="eventYearFilter"></select>
+            </label>
+            <label>赛事级别
+              <select id="eventLevelFilter"></select>
+            </label>
+            <label>赛区
+              <select id="eventRegionFilter"></select>
+            </label>
+            <label>项目
+              <select id="eventProjectFilter"></select>
+            </label>
+          </div>
+          <div class="event-grid" id="eventGrid"></div>
+        </section>
+
+        <section class="view" id="playersView">
+          <div class="players-layout">
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">选手库</p>
+                  <h2>选手列表</h2>
+                </div>
+              </div>
+              <div class="filter-row compact">
+                <label>项目
+                  <select id="playerProjectFilter"></select>
+                </label>
+                <label>赛事级别
+                  <select id="playerLevelFilter"></select>
+                </label>
+              </div>
+              <div class="player-list" id="playerList"></div>
+            </section>
+            <section class="panel player-detail" id="playerDetail"></section>
+          </div>
+        </section>
+
+        <section class="view" id="libraryView">
+          <div class="watchlist-layout">
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">扩充库</p>
+                  <h2>手动添加对象</h2>
+                </div>
+              </div>
+              <div class="compare-inputs stack library-form">
+                <label>对象类型
+                  <select id="libraryType">
+                    <option value="school">学校 / 团体</option>
+                    <option value="single">单打选手</option>
+                    <option value="double">双打组合</option>
+                  </select>
+                </label>
+                <label>名称 / 组合
+                  <input id="libraryName" placeholder="例如：山东大学 / 孙海馨 / 张三 / 李四">
+                </label>
+                <label>学校
+                  <input id="librarySchool" list="schoolOptions" placeholder="可从已有学校中选择">
+                  <datalist id="schoolOptions"></datalist>
+                  <datalist id="participantOptions"></datalist>
+                </label>
+                <label>项目
+                  <input id="libraryProject" placeholder="例如：女子甲组单打">
+                </label>
+                <button class="primary-button" id="addLibraryItem">加入库</button>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">库信息</p>
+                  <h2>可编辑列表</h2>
+                </div>
+              </div>
+              <div class="segmented compact-tabs">
+                <button class="segment active" data-library-tab="schools">学校库</button>
+                <button class="segment" data-library-tab="singles">单打库</button>
+                <button class="segment" data-library-tab="doubles">双打库</button>
+                <button class="segment" data-library-tab="participants">总表</button>
+              </div>
+              <div class="editable-table-wrap">
+                <table class="editable-table" id="libraryTable"></table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="compareView">
+          <section class="panel compare-controls">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">赛前对比</p>
+                <h2>选择两名选手</h2>
+              </div>
+              <button class="ghost-button" id="exportCompare">导出报告</button>
+            </div>
+            <div class="compare-inputs">
+              <label>选手 A
+                <select id="compareA"></select>
+              </label>
+              <label>选手 B
+                <select id="compareB"></select>
+              </label>
+              <button class="primary-button" id="runCompare">生成分析</button>
+            </div>
+          </section>
+          <div class="compare-result" id="compareResult"></div>
+        </section>
+
+        <section class="view" id="watchlistView">
+          <div class="watchlist-layout">
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">关注名单</p>
+                  <h2>添加备赛目标</h2>
+                </div>
+              </div>
+              <div class="compare-inputs stack">
+                <label>选手
+                  <select id="watchPlayer"></select>
+                </label>
+                <button class="primary-button" id="addWatch">加入关注</button>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">赛前摘要</p>
+                  <h2>当前关注</h2>
+                </div>
+                <button class="ghost-button" id="exportWatch">导出名单</button>
+              </div>
+              <div class="watch-items" id="watchItems"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
