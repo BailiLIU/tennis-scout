@@ -18,12 +18,12 @@
         </div>
         <nav class="nav-list">
           <button class="nav-item active" data-view="dashboard">总览</button>
-          <button class="nav-item" data-view="upload">批量导入</button>
           <button class="nav-item" data-view="events">赛事库</button>
-          <button class="nav-item" data-view="players">选手库</button>
-          <button class="nav-item" data-view="library">库管理</button>
+          <button class="nav-item" data-view="players">参赛对象库</button>
+          <button class="nav-item" data-view="personal">选手卡片</button>
           <button class="nav-item" data-view="compare">对阵分析</button>
-          <button class="nav-item" data-view="watchlist">关注名单</button>
+          <button class="nav-item" data-view="library">库管理</button>
+          <button class="nav-item" data-view="upload">批量导入</button>
         </nav>
         <div class="data-note">
           <strong>数据提示</strong>
@@ -36,55 +36,39 @@
           <div>
             <p class="eyebrow">V0 手动录入 + 基础查询版</p>
             <h1 id="viewTitle">总览</h1>
+            <p class="page-subtitle" id="viewSubtitle">查看 Tennis Scout 当前数据概况、导入状态与关键榜单。</p>
           </div>
           <div class="topbar-actions">
             <label class="global-search">
               <span>搜索</span>
               <input id="globalSearch" type="search" placeholder="选手、学校、赛区、赛事">
             </label>
-            <button class="ghost-button" id="saveLocal">保存数据</button>
+            <span class="save-status" id="saveStatus">自动保存已开启</span>
+            <span class="mode-badge" id="roleBadge">访客模式</span>
+            <button class="ghost-button" id="adminToggle">管理员登录</button>
+            <button class="ghost-button" id="openCorrection">提交修正申请</button>
             <button class="primary-button" id="exportAll">导出 CSV</button>
           </div>
         </header>
 
         <section class="view active" id="dashboardView">
           <div class="metrics-grid" id="metricsGrid"></div>
-          <div class="two-column">
-            <section class="panel">
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">区域战绩</p>
-                  <h2>分区前四学校</h2>
-                </div>
-                <button class="ghost-button" data-view-jump="events">查看赛事库</button>
+          <div class="dashboard-principle">系统原则：仅展示已录入事实，不输出胜负预测；数据修改请通过批量导入或库管理完成。</div>
+          <div class="dashboard-edition-tabs" id="dashboardEditionTabs"></div>
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">区域战绩</p>
+                <h2>分区前四学校</h2>
               </div>
-              <div class="compact-table-wrap">
-                <table class="compact-table" id="regionalPreview"></table>
-              </div>
-            </section>
-            <section class="panel">
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">事实型分析</p>
-                  <h2>系统原则</h2>
-                </div>
-              </div>
-              <div class="rules-list">
-                <article>
-                  <strong>只基于已录入事实</strong>
-                  <span>展示历史成绩、直接交手、共同对手和比分接近度，不输出无依据胜率。</span>
-                </article>
-                <article>
-                  <strong>区分赛事层级</strong>
-                  <span>省赛、分区赛、总决赛分组展示，分析时明确数据来源。</span>
-                </article>
-                <article>
-                  <strong>保留人工校对</strong>
-                  <span>Excel / CSV 解析结果先进入校对表，再保存到赛事库和选手库。</span>
-                </article>
-              </div>
-            </section>
-          </div>
+              <button class="ghost-button" data-view-jump="events">查看赛事库</button>
+            </div>
+            <div class="scroll-strip-wrap">
+              <button class="scroll-button" data-scroll-target="regionalPreview" data-scroll-dir="-1">‹</button>
+              <div class="region-card-grid" id="regionalPreview"></div>
+              <button class="scroll-button" data-scroll-target="regionalPreview" data-scroll-dir="1">›</button>
+            </div>
+          </section>
           <section class="panel">
             <div class="panel-heading">
               <div>
@@ -108,10 +92,12 @@
               <div class="segmented" role="group" aria-label="数据类型">
                 <button class="segment active" data-shot-type="regional">分区赛</button>
                 <button class="segment" data-shot-type="national">全国赛</button>
-                <button class="segment" data-shot-type="long">长表导入</button>
                 <button class="segment" data-shot-type="teamMatches">团体对阵</button>
+                <button class="segment" data-shot-type="individualMatches">单项对阵</button>
               </div>
               <div class="type-help" id="typeHelp">对应最终模板页签：分区赛。字段为届次、赛事阶段、赛区、项目、第1名至第4名。</div>
+              <div class="permission-note" id="visitorImportNotice">该功能仅管理员可用。如需补充数据，请提交数据补充申请。</div>
+              <div id="adminImportPanel">
               <label class="drop-area">
                 <input id="importInput" type="file" accept=".csv,.tsv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
                 <span>选择 Excel / CSV 文件</span>
@@ -122,16 +108,24 @@
                 <span>或直接粘贴表格</span>
                 <textarea id="pasteTableInput" placeholder="从 Excel 复制包含表头的数据区域后，粘贴到这里"></textarea>
               </label>
-              <button class="ghost-button wide" id="parsePastedTable">解析粘贴表格</button>
-              <button class="primary-button wide" id="mockRecognize">解析导入</button>
+              <button class="ghost-button wide" id="parsePastedTable">读取粘贴表格，生成校对表</button>
+              <button class="primary-button wide" id="mockRecognize">读取文件，生成校对表</button>
+              <div class="import-history-panel">
+                <div class="mini-heading">
+                  <strong>导入记录</strong>
+                  <small>可撤销最近几次整批导入</small>
+                </div>
+                <div id="importHistoryList" class="import-history-list"></div>
+              </div>
+              </div>
             </section>
-            <section class="panel">
+            <section class="panel" id="adminCorrectionPanel">
               <div class="panel-heading">
                 <div>
                   <p class="eyebrow">人工校对</p>
                   <h2>结构化结果</h2>
                 </div>
-                <button class="ghost-button" id="saveCorrection">保存入库</button>
+                <button class="ghost-button" id="saveCorrection">确认无误，导入入库</button>
               </div>
               <div class="editable-table-wrap">
                 <table class="editable-table" id="correctionTable"></table>
@@ -163,9 +157,14 @@
             <section class="panel">
               <div class="panel-heading">
                 <div>
-                  <p class="eyebrow">选手库</p>
-                  <h2>选手列表</h2>
+                  <p class="eyebrow">参赛对象库</p>
+                  <h2>对象列表</h2>
                 </div>
+              </div>
+              <div class="object-tabs" role="group" aria-label="参赛对象类型">
+                <button class="segment active" data-object-type="school">学校/团体</button>
+                <button class="segment" data-object-type="doubles">双打组合</button>
+                <button class="segment" data-object-type="singles">单打选手</button>
               </div>
               <div class="filter-row compact">
                 <label>项目
@@ -181,55 +180,68 @@
           </div>
         </section>
 
-        <section class="view" id="libraryView">
-          <div class="watchlist-layout">
+        <section class="view" id="personalView">
+          <div class="players-layout">
             <section class="panel">
               <div class="panel-heading">
                 <div>
-                  <p class="eyebrow">扩充库</p>
-                  <h2>手动添加对象</h2>
+                  <p class="eyebrow">个人选手档案</p>
+                  <h2>选手卡片</h2>
                 </div>
               </div>
-              <div class="compare-inputs stack library-form">
-                <label>对象类型
-                  <select id="libraryType">
-                    <option value="school">学校 / 团体</option>
-                    <option value="single">单打选手</option>
-                    <option value="double">双打组合</option>
-                  </select>
-                </label>
-                <label>名称 / 组合
-                  <input id="libraryName" placeholder="例如：山东大学 / 孙海馨 / 张三 / 李四">
+              <div class="filter-row compact">
+                <label>搜索姓名
+                  <input id="personalSearch" type="search" placeholder="输入个人姓名">
                 </label>
                 <label>学校
-                  <input id="librarySchool" list="schoolOptions" placeholder="可从已有学校中选择">
-                  <datalist id="schoolOptions"></datalist>
-                  <datalist id="participantOptions"></datalist>
+                  <select id="personalSchoolFilter"></select>
                 </label>
                 <label>项目
-                  <input id="libraryProject" placeholder="例如：女子甲组单打">
+                  <select id="personalProjectFilter"></select>
                 </label>
-                <button class="primary-button" id="addLibraryItem">加入库</button>
+                <label>数据状态
+                  <select id="personalStatusFilter"></select>
+                </label>
+                <label>赛事类型
+                  <select id="personalLevelFilter"></select>
+                </label>
               </div>
+              <div class="player-list" id="personalList"></div>
             </section>
-            <section class="panel">
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">库信息</p>
-                  <h2>可编辑列表</h2>
-                </div>
-              </div>
-              <div class="segmented compact-tabs">
-                <button class="segment active" data-library-tab="schools">学校库</button>
-                <button class="segment" data-library-tab="singles">单打库</button>
-                <button class="segment" data-library-tab="doubles">双打库</button>
-                <button class="segment" data-library-tab="participants">总表</button>
-              </div>
-              <div class="editable-table-wrap">
-                <table class="editable-table" id="libraryTable"></table>
-              </div>
-            </section>
+            <section class="panel player-detail" id="personalDetail"></section>
           </div>
+        </section>
+
+        <section class="view" id="libraryView">
+          <section class="panel" id="libraryNoAccess">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">无权限</p>
+                <h2>库管理仅管理员可用</h2>
+              </div>
+              <button class="ghost-button" data-open-correction>提交修正申请</button>
+            </div>
+            <p class="meta">普通用户可以查看、搜索、导出数据；发现错误请提交修正申请，由管理员在库管理中统一处理。</p>
+          </section>
+          <section class="panel" id="libraryAdminPanel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">数据治理中心</p>
+                <h2>库管理</h2>
+              </div>
+            </div>
+            <div class="segmented governance-tabs" role="group" aria-label="库管理标签">
+              <button class="segment active" data-governance-tab="objects">对象管理</button>
+              <button class="segment" data-governance-tab="merge">名称合并</button>
+              <button class="segment" data-governance-tab="requests">修正申请</button>
+              <button class="segment" data-governance-tab="imports">导入记录</button>
+              <button class="segment" data-governance-tab="suspicious">可疑数据</button>
+              <button class="segment" data-governance-tab="logs">操作日志</button>
+            </div>
+            <div id="governancePanel"></div>
+          </section>
+          <datalist id="schoolOptions"></datalist>
+          <datalist id="participantOptions"></datalist>
         </section>
 
         <section class="view" id="compareView">
@@ -237,15 +249,20 @@
             <div class="panel-heading">
               <div>
                 <p class="eyebrow">赛前对比</p>
-                <h2>选择两名选手</h2>
+                <h2>选择同类型对象</h2>
               </div>
               <button class="ghost-button" id="exportCompare">导出报告</button>
             </div>
+            <div class="segmented compact-tabs" role="group" aria-label="分析模式">
+              <button class="segment active" data-compare-mode="singles">单打对比</button>
+              <button class="segment" data-compare-mode="doubles">双打对比</button>
+              <button class="segment" data-compare-mode="school">团体对比</button>
+            </div>
             <div class="compare-inputs">
-              <label>选手 A
+              <label>对象 A
                 <select id="compareA"></select>
               </label>
-              <label>选手 B
+              <label>对象 B
                 <select id="compareB"></select>
               </label>
               <button class="primary-button" id="runCompare">生成分析</button>
@@ -254,35 +271,74 @@
           <div class="compare-result" id="compareResult"></div>
         </section>
 
-        <section class="view" id="watchlistView">
-          <div class="watchlist-layout">
-            <section class="panel">
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">关注名单</p>
-                  <h2>添加备赛目标</h2>
-                </div>
-              </div>
-              <div class="compare-inputs stack">
-                <label>选手
-                  <select id="watchPlayer"></select>
-                </label>
-                <button class="primary-button" id="addWatch">加入关注</button>
-              </div>
-            </section>
-            <section class="panel">
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">赛前摘要</p>
-                  <h2>当前关注</h2>
-                </div>
-                <button class="ghost-button" id="exportWatch">导出名单</button>
-              </div>
-              <div class="watch-items" id="watchItems"></div>
-            </section>
-          </div>
-        </section>
       </main>
+    </div>
+
+    <div class="modal-backdrop" id="correctionModal" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="correctionTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">数据修正申请</p>
+            <h2 id="correctionTitle">提交修正申请</h2>
+          </div>
+          <button class="ghost-button" id="closeCorrection">关闭</button>
+        </div>
+        <div class="correction-form">
+          <label>问题类型
+            <select id="correctionIssueType">
+              <option>姓名错误</option>
+              <option>学校错误</option>
+              <option>名次错误</option>
+              <option>比分错误</option>
+              <option>重复记录</option>
+              <option>缺少数据</option>
+              <option>新数据补充</option>
+              <option>其他</option>
+            </select>
+          </label>
+          <label>关联页面
+            <input id="correctionPage">
+          </label>
+          <label>关联对象
+            <input id="correctionObject">
+          </label>
+          <label>错误位置
+            <input id="correctionLocation" placeholder="例如：赛事库第28届全国赛、选手卡片成绩记录等">
+          </label>
+          <label>当前显示内容
+            <textarea id="correctionCurrent" rows="3"></textarea>
+          </label>
+          <label>正确内容
+            <textarea id="correctionCorrect" rows="3"></textarea>
+          </label>
+          <label>补充说明
+            <textarea id="correctionNote" rows="3"></textarea>
+          </label>
+          <label>上传截图/文件
+            <input id="correctionFile" placeholder="暂不真实上传，可填写文件名或说明">
+          </label>
+          <label>联系方式（可选）
+            <input id="correctionContact" placeholder="微信、邮箱或电话">
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="ghost-button" id="cancelCorrection">取消</button>
+          <button class="primary-button" id="submitCorrectionRequest">提交申请</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="detailModal" hidden>
+      <section class="modal drawer-modal" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow" id="detailModalEyebrow">详情</p>
+            <h2 id="detailModalTitle">资料详情</h2>
+          </div>
+          <button class="ghost-button" id="closeDetailModal">关闭</button>
+        </div>
+        <div id="detailModalBody"></div>
+      </section>
     </div>
 
     <script src="./app.js"></script>
